@@ -80,8 +80,15 @@ export class StickerStorage {
     const response = await this.githubRequest(this.apiUrl(filePath));
     if (response.status === 404) return null;
     const json = await response.json() as { content?: string; sha: string; encoding?: string };
-    if (!json.content || json.encoding !== "base64") throw new Error(`Unexpected GitHub file response for ${filePath}`);
-    return { buffer: Buffer.from(json.content.replace(/\n/g, ""), "base64"), sha: json.sha };
+    if (json.content && json.encoding === "base64") {
+      return { buffer: Buffer.from(json.content.replace(/\n/g, ""), "base64"), sha: json.sha };
+    }
+    // GitHub Contents API omits content for files larger than 1 MB; fetch the blob by SHA.
+    if (!json.sha) throw new Error(`Unexpected GitHub file response for ${filePath}`);
+    const blobResponse = await this.githubRequest(`https://api.github.com/repos/${this.githubRepo}/git/blobs/${json.sha}`);
+    const blob = await blobResponse.json() as { content?: string; encoding?: string };
+    if (!blob.content || blob.encoding !== "base64") throw new Error(`Unexpected GitHub blob response for ${filePath}`);
+    return { buffer: Buffer.from(blob.content.replace(/\n/g, ""), "base64"), sha: json.sha };
   }
 
   private async putRemoteFile(filePath: string, buffer: Buffer, message: string): Promise<void> {
