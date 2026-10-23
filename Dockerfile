@@ -6,6 +6,10 @@ WORKDIR /app
 RUN apk add --no-cache git
 RUN git clone --depth 1 https://github.com/asashiki/sticker-mcp.git /app
 
+# Override the upstream local-only storage with GitHub-backed persistence.
+COPY storage.ts /tmp/storage.ts
+RUN cp /tmp/storage.ts /app/src/storage.ts
+
 RUN npm ci --include=optional --no-audit --no-fund
 RUN npm run build
 RUN npm prune --omit=dev --include=optional
