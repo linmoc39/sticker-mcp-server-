@@ -94,7 +94,7 @@ export class StickerStorage {
     const response = await this.githubRequest(this.apiUrl(filePath), {
       method: "PUT", body: JSON.stringify(body)
     });
-    if (!response.ok) throw new Error(`Could not save ${filePath} to GitHub.`);
+    if (!response.ok) { const detail = await response.text().catch(() => ""); throw new Error(`Could not save ${filePath} to GitHub (HTTP ${response.status}): ${detail.slice(0, 500)}`); }
   }
 
   private async deleteRemoteFile(filePath: string, message: string): Promise<void> {
