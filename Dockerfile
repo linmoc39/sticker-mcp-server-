@@ -1,12 +1,12 @@
-FROM node:22-alpine AS deps
+FROM node:22-alpine AS build
 WORKDIR /app
-COPY package*.json ./
-RUN npm install --include=optional --os=linux --libc=musl --cpu=x64 --no-audit --no-fund
 
-FROM deps AS build
-COPY tsconfig.json ./
-COPY scripts ./scripts
-COPY src ./src
+# The deployment repository contains only this Dockerfile.
+# Fetch the actual application source from the upstream project.
+RUN apk add --no-cache git
+RUN git clone --depth 1 https://github.com/asashiki/sticker-mcp.git /app
+
+RUN npm ci --include=optional --no-audit --no-fund
 RUN npm run build
 RUN npm prune --omit=dev --include=optional
 
@@ -15,9 +15,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATA_DIR=/app/data
-COPY --from=build /app/package*.json ./
+
+COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+
 RUN mkdir -p /app/data/images && chown -R node:node /app
 USER node
 EXPOSE 3000
