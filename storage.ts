@@ -32,7 +32,7 @@ async function validateImage(buffer: Buffer, fallbackMimeType: string): Promise<
   return detected;
 }
 
-type StoredSticker = Omit<Sticker, "filepath"> & { filename: string };
+type StoredSticker = Omit<Sticker, "filepath"> & { filename: string; filepath?: string };
 
 export class StickerStorage {
   private dataFile: string;
